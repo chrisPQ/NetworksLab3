@@ -13,11 +13,11 @@ intro_message = "Hello! Welcome to my (lyakhovs) server! I'm majoring in CS\n"
 
 
 async def client_handling(reader, writer):
-
+    print("passwordStart\n")
     for attempts in range(3):
-        writer.write(b"Enter Password")
+        passwordInput = "Enter Password"
+        writer.write(passwordInput.encode())
         await writer.drain()
-
         sent = await reader.read(CHUNK)
         password = sent.decode().strip()
         if password != serverPassword:

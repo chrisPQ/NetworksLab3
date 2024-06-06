@@ -16,7 +16,7 @@ def to_hex(number):
 
 
 async def recv_message(reader: asyncio.StreamReader):
-    full_data = await reader.readline()
+    full_data = await reader.read()
     return full_data.decode()
 
 
@@ -24,43 +24,39 @@ async def connect(i):
     # Configure a socket object to use IPv4 and TCP
     reader, writer = await asyncio.open_connection(IP, DPORT)
 
-    try:
-        # TODO: receive the introduction message by implementing `recv_intro_message` above.
-        intro = await recv_message(reader)
-        print(intro)
+    # TODO: receive the introduction message by implementing `recv_intro_message` above.
+    intro = await recv_message(reader)
+    print(intro)
 
-        # Get the filename to send from the user
-        filename = ""
-        while True:
-            filename = input("Enter filename to send: ")
-            if os.path.isfile("./myfiles/" + filename):
-                break
-            print("Invalid filename.")
+    # Get the filename to send from the user
+    filename = ""
+    while True:
+        filename = input("Enter password: ")
 
-        # Send the filename to the server
-        await send_long_message(writer, filename)
+    # Send the filename to the server
+    await send_long_message(writer, filename)
 
-        # Receive a response from the server
-        await recv_message(reader)
+    # Receive a response from the server
+    await recv_message(reader)
 
 
-        # Read in the contents of the file
+    # Read in the contents of the file
 
-        with open("./myfiles/" + filename, 'r') as f:
-            tosend = f.read()
+    with open("./myfiles/" + filename, 'r') as f:
+        tosend = f.read()
 
-        # Send the file contents to the server
-        long_msg = f"{tosend}"
+    # Send the file contents to the server
+    long_msg = f"{tosend}"
 
-        """
-        Part 2: Long Message Exchange Protocol
-        """
-        # TODO: Send message to the server by implementing `send_long_message` above.
-        await send_long_message(writer, long_msg)
+    """
+    Part 2: Long Message Exchange Protocol
+    """
+    # TODO: Send message to the server by implementing `send_long_message` above.
+    await send_long_message(writer, long_msg)
 
-    finally:
-        writer.close()
-        await writer.wait_closed()
+
+    writer.close()
+    await writer.wait_closed()
 
 
 async def send_long_message(writer: asyncio.StreamWriter, data):
