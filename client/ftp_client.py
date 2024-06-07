@@ -3,7 +3,9 @@ import asyncio
 import socket
 from threading import Thread
 
+CHUNK = 100
 
+EOF = "EOF"
 
 IP, DPORT = 'localhost', 8080
 
@@ -16,47 +18,84 @@ def to_hex(number):
 
 
 async def recv_message(reader: asyncio.StreamReader):
-    full_data = await reader.read()
+    full_data = await reader.read(CHUNK)
     return full_data.decode()
 
 
 async def connect(i):
     # Configure a socket object to use IPv4 and TCP
     reader, writer = await asyncio.open_connection(IP, DPORT)
-
+    correctPassword = False
     # TODO: receive the introduction message by implementing `recv_intro_message` above.
-    intro = await recv_message(reader)
-    print(intro)
+    while not correctPassword:
+        intro = await recv_message(reader)
+        print(intro)
 
-    # Get the filename to send from the user
-    filename = ""
+        # Get the filename to send from the user
+        filename = input(" ")
+
+        # Send the filename to the server
+        await send_long_message(writer, filename)
+
+        # Receive a response from the server
+        intro = await recv_message(reader)
+        if intro == "Incorrect \n":
+
+            print(intro)
+        else:
+            print(intro)
+
+            break
+
     while True:
-        filename = input("Enter password: ")
+        command = input("Command to send: ")
 
-    # Send the filename to the server
-    await send_long_message(writer, filename)
+        if command.startswith("list"):
+            await send_long_message(writer, command)
+            data = await recv_message(reader)
+            if not data:
+                break
+            print(data)
+        elif command.startswith("put"):
+            if os.path.exists(command[4:]):
+                await send_long_message(writer, command)
+                with open(command[4:], 'rb') as f:
+                    while sendData := f.read(CHUNK):
+                        writer.write(sendData)
+                        await writer.drain()
+                f.close()
+                writer.write(EOF.encode())
+                await writer.drain()
+                print(await recv_message(reader))
+            else:
+                print("file does not exist")
+        elif command.startswith("remove"):
+            await send_long_message(writer, command)
+            print(await recv_message(reader))
+        elif command.startswith("get"):
+            await send_long_message(writer, command)
+            server_response = await recv_message(reader)
+            if server_response.decode() == "ACK":
+                print("file exists")
+            elif server_response.decode() == "does not exist":
+                print("file doesn't exist")
+        elif command.startswith("close"):
+            writer.close()
+            await writer.wait_closed()
 
-    # Receive a response from the server
-    await recv_message(reader)
+
 
 
     # Read in the contents of the file
 
-    with open("./myfiles/" + filename, 'r') as f:
-        tosend = f.read()
 
-    # Send the file contents to the server
-    long_msg = f"{tosend}"
 
     """
     Part 2: Long Message Exchange Protocol
     """
     # TODO: Send message to the server by implementing `send_long_message` above.
-    await send_long_message(writer, long_msg)
+    # await send_long_message(writer, long_msg)
 
-
-    writer.close()
-    await writer.wait_closed()
 
 
 async def send_long_message(writer: asyncio.StreamWriter, data):
@@ -84,7 +123,6 @@ async def main(tosend):
 
 # Run the `main()` function
 if __name__ == "__main__":
-    with open("script.txt", 'r') as f:
-        tosend = f.read()
+    tosend = "whoops"
 
     asyncio.run(main(tosend))
