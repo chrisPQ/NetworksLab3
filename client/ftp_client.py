@@ -27,7 +27,7 @@ async def connect(i):
     reader, writer = await asyncio.open_connection(IP, DPORT)
     correctPassword = False
     # TODO: receive the introduction message by implementing `recv_intro_message` above.
-    while not correctPassword:
+    while True:
         intro = await recv_message(reader)
         print(intro)
 
@@ -42,19 +42,25 @@ async def connect(i):
         if intro == "Incorrect \n":
 
             print(intro)
+        elif intro.startswith("Too"):
+            print(intro)
+            writer.close()
+            await writer.wait_closed()
+            break
         else:
             print(intro)
 
             break
 
     while True:
+        if intro.startswith("Too"):
+            break
+
         command = input("Command to send: ")
 
         if command.startswith("list"):
             await send_long_message(writer, command)
             data = await recv_message(reader)
-            if not data:
-                break
             print(data)
         elif command.startswith("put"):
             if os.path.exists(command[4:]):
@@ -75,26 +81,28 @@ async def connect(i):
         elif command.startswith("get"):
             await send_long_message(writer, command)
             server_response = await recv_message(reader)
-            if server_response.decode() == "ACK":
+            if server_response == "ACK":
                 print("file exists")
-            elif server_response.decode() == "does not exist":
+                with open(command[4:], 'wb') as f:
+                    while True:
+                        dataChunk = await reader.read(CHUNK)
+
+                        if not dataChunk or dataChunk.endswith(EOF.encode()):
+                            f.write(dataChunk[:-3])
+                            break
+                        f.write(dataChunk)
+                f.close()
+            elif server_response == "file does not exist":
                 print("file doesn't exist")
         elif command.startswith("close"):
             writer.close()
             await writer.wait_closed()
-
-
-
-
-    # Read in the contents of the file
-
-
-
-    """
-    Part 2: Long Message Exchange Protocol
-    """
-    # TODO: Send message to the server by implementing `send_long_message` above.
-    # await send_long_message(writer, long_msg)
+            break
+        else:
+            await send_long_message(writer, command)
+            returnMessage = await recv_message(reader)
+            print(returnMessage[4:])
+    return
 
 
 
@@ -123,6 +131,6 @@ async def main(tosend):
 
 # Run the `main()` function
 if __name__ == "__main__":
-    tosend = "whoops"
+    tosend = "nothing"
 
     asyncio.run(main(tosend))

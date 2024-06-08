@@ -28,6 +28,13 @@ async def client_handling(reader, writer):
         sent = await reader.read(data_length)
         password = sent.decode()
         print(password)
+        print(attempts)
+        if attempts >= 2:
+            writer.write(b"Too many attempts. Closing connection")
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            break
         if password != serverPassword:
             writer.write(b"Incorrect \n")
             await writer.drain()
@@ -37,15 +44,11 @@ async def client_handling(reader, writer):
             await writer.drain()
             print("correct \n")
             break
-        if attempts >= 3:
-            writer.write(b"Too many attempts. Closing connection")
-            await writer.drain()
-            writer.close()
-            await writer.wait_closed()
-            break
+
 
     # command handling
     while True:
+
         data_length_hex = await reader.readexactly(8)
         # Then we convert it from hex to integer format that we can work with
         data_length = int(data_length_hex, 16)
@@ -67,11 +70,28 @@ async def client_handling(reader, writer):
                 writer.write(b"file removed")
                 await writer.drain()
             else:
-                writer.write(b"file does not exist")
+                writer.write(b"NAK file does not exist")
                 await writer.drain()
+        elif sent.decode().startswith("get"):
+            if os.path.exists(sent.decode()[4:]):
 
+                writer.write(b"ACK")
+                await writer.drain()
+                await getFunc(reader, writer, sent.decode()[4:])
+
+            else:
+                writer.write(b"NAK file does not exist")
+                await writer.drain()
+        elif sent.decode().startswith("close"):
+            writer.close()
+            await writer.wait_closed()
+            break
+        else:
+            writer.write(b"NAK command does not exist")
+            await writer.drain()
 
     return
+
 
 async def putFunc(reader, writer, name):
 
@@ -86,7 +106,19 @@ async def putFunc(reader, writer, name):
     f.close()
     writer.write(b"Uploaded file")
     await writer.drain()
+    return
 
+
+async def getFunc(reader, writer, name):
+    with open(name, 'rb') as f:
+        while dataChunk := f.read(CHUNK):
+            writer.write(dataChunk)
+            await writer.drain()
+        writer.write(EOF.encode())
+        await writer.drain()
+    f.close()
+
+    return
 
 
 async def main():
