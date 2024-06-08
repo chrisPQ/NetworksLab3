@@ -31,27 +31,26 @@ async def connect(i):
         intro = await recv_message(reader)
         print(intro)
 
-        passIn = input(" ")
+        passIn = await asyncio.to_thread(input," ")
 
         # Send the filename to the server
         await send_long_message(writer, passIn)
 
         # Receive a response from the server
         intro = await recv_message(reader)
-        if intro.startswith("Incorrect"):
+        print(intro)
 
-            print(intro)
-        elif intro.endswith("connection"):
-            print(intro)
+        if intro == "Incorrect \n":
+            continue
+        elif intro.startswith("Too"):
             writer.close()
             await writer.wait_closed()
             break
         else:
-            print(intro)
             break
 
     while True:
-        if intro.endswith("connection"):
+        if intro.startswith("Too"):
             break
 
         command = input("Command to send: ")
@@ -75,12 +74,13 @@ async def connect(i):
                 print("file does not exist")
         elif command.startswith("remove"):
             await send_long_message(writer, command)
-            print(await recv_message(reader))
+            returnAck = await recv_message(reader)
+            print(returnAck[3:])
         elif command.startswith("get"):
             await send_long_message(writer, command)
             server_response = await recv_message(reader)
             if server_response == "ACK":
-                print("file exists")
+                print("file exists, downloading...")
                 with open(command[4:], 'wb') as f:
                     while True:
                         dataChunk = await reader.read(CHUNK)

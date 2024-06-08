@@ -67,7 +67,7 @@ async def client_handling(reader, writer):
         elif sent.decode().startswith("remove"):
             if os.path.exists(sent.decode()[7:]):
                 os.remove(sent.decode()[7:])
-                writer.write(b"file removed")
+                writer.write(b"ACK file removed")
                 await writer.drain()
             else:
                 writer.write(b"NAK file does not exist")
