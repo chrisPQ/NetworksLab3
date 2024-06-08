@@ -1,3 +1,5 @@
+# Created by Ryan Rueber and Christopher Qualls
+
 import os
 import asyncio
 import socket
@@ -11,7 +13,7 @@ EOF = "EOF"
 
 serverPassword = "password"
 
-intro_message = "Hello! Welcome to my (lyakhovs) server! I'm majoring in CS\n"
+intro_message = "Hello! Welcome to my quallsc and rueberr server! I'm majoring in CS\n"
 
 
 async def client_handling(reader, writer):
