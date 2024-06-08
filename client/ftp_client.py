@@ -31,29 +31,27 @@ async def connect(i):
         intro = await recv_message(reader)
         print(intro)
 
-        # Get the filename to send from the user
-        filename = input(" ")
+        passIn = input(" ")
 
         # Send the filename to the server
-        await send_long_message(writer, filename)
+        await send_long_message(writer, passIn)
 
         # Receive a response from the server
         intro = await recv_message(reader)
-        if intro == "Incorrect \n":
+        if intro.startswith("Incorrect"):
 
             print(intro)
-        elif intro.startswith("Too"):
+        elif intro.endswith("connection"):
             print(intro)
             writer.close()
             await writer.wait_closed()
             break
         else:
             print(intro)
-
             break
 
     while True:
-        if intro.startswith("Too"):
+        if intro.endswith("connection"):
             break
 
         command = input("Command to send: ")
@@ -92,7 +90,7 @@ async def connect(i):
                             break
                         f.write(dataChunk)
                 f.close()
-            elif server_response == "file does not exist":
+            else:
                 print("file doesn't exist")
         elif command.startswith("close"):
             writer.close()

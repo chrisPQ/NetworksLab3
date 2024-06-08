@@ -29,7 +29,7 @@ async def client_handling(reader, writer):
         password = sent.decode()
         print(password)
         print(attempts)
-        if attempts >= 2:
+        if attempts >= 2 and password != serverPassword:
             writer.write(b"Too many attempts. Closing connection")
             await writer.drain()
             writer.close()
